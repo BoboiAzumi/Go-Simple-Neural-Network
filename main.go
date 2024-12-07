@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	train := false
+	train := true
 
 	if train {
 		trainer.Train()
