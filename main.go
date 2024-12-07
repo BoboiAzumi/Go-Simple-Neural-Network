@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	train := true
+	train := false // True for training, false for load from exported models
 
 	if train {
 		trainer.Train()
