@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func Export(layers []layer.DenseLayer, path string) {
+func Export(layers []layer.Layer, path string) {
 	var layerlist model_struct.LayersList = model_struct.LayersList{
 		Layers: []model_struct.LayerInformation{},
 	}

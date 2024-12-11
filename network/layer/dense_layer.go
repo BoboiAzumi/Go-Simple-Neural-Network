@@ -4,6 +4,7 @@ import (
 	"nn/network/activation"
 	"nn/network/loss"
 	"nn/network/models/model_struct"
+	"nn/network/optimizer"
 	weightinitialization "nn/network/weight_initialization"
 )
 
@@ -18,6 +19,11 @@ type DenseLayer struct {
 	activationFunction           activation.ActivationFunc
 	derivativeActivationFunction activation.DerivativeActivationFunc
 	initialization               weightinitialization.Initialization
+	opt                          optimizer.Optimizer
+	m                            [][]float64
+	v                            [][]float64
+	mBias                        []float64
+	vBias                        []float64
 }
 
 func (thisLayer *DenseLayer) Init(inputSize int, neuronSize int, activation activation.ActivationFunc, derivativeLoss loss.DerivativeLossFunc, derivativeActivation activation.DerivativeActivationFunc, initialization weightinitialization.Initialization) {
@@ -54,86 +60,70 @@ func (thisLayer *DenseLayer) Forward(x []float64) []float64 {
 	return thisLayer.output
 }
 
-func (thisLayer *DenseLayer) Backward(y []float64, learningRate float64, isHidden bool) []float64 {
-	var lossOutGradient []float64 = []float64{}
-	var derivativeActivation []float64 = []float64{}
-	var inputWeightGradient [][]float64 = [][]float64{}
+func (thisLayer *DenseLayer) SetOptimizer(opt optimizer.Optimizer) {
+	thisLayer.opt = opt
+}
+
+func (thisLayer *DenseLayer) Backward(y []float64, isHidden bool) []float64 {
+	var loss_derivative []float64 = make([]float64, thisLayer.neuronSize)
+	var activation_derivative []float64 = make([]float64, thisLayer.neuronSize)
 
 	if isHidden {
-		lossOutGradient = y
+		loss_derivative = y
 	} else {
 		for i := range thisLayer.neuronSize {
-			temp := thisLayer.derivativeLossFunction(thisLayer.output[i], y[i])
-			lossOutGradient = append(lossOutGradient, temp)
+			loss_derivative[i] = thisLayer.derivativeLossFunction(thisLayer.output[i], y[i])
 		}
 	}
 
 	for i := range thisLayer.neuronSize {
-		temp := thisLayer.derivativeActivationFunction(thisLayer.output[i])
-		derivativeActivation = append(derivativeActivation, temp)
+		activation_derivative[i] = thisLayer.derivativeActivationFunction(thisLayer.output[i])
 	}
 
-	for range thisLayer.neuronSize {
-		inputWeightGradient = append(inputWeightGradient, thisLayer.input)
+	prevGradient := make([]float64, thisLayer.inputSize)
+
+	for i := range thisLayer.inputSize {
+		sumLossDerivative := 0.0
+		sumActivationDerivative := 0.0
+		sumInput := 0.0
+		sumWeight := 0.0
+		for j := range thisLayer.neuronSize {
+			sumLossDerivative += loss_derivative[j]
+			sumActivationDerivative += activation_derivative[j]
+			sumInput += thisLayer.input[i]
+			sumWeight += thisLayer.weight[j][i]
+		}
+
+		prevGradient[i] = sumLossDerivative * sumActivationDerivative * sumInput * sumWeight
 	}
 
-	oldWeight := thisLayer.weight
+	if thisLayer.opt.Info() == "adam" {
+		if thisLayer.m == nil || thisLayer.v == nil {
+			thisLayer.m = make([][]float64, thisLayer.neuronSize)
+			thisLayer.v = make([][]float64, thisLayer.neuronSize)
+			for i := range thisLayer.m {
+				thisLayer.m[i] = make([]float64, thisLayer.inputSize)
+				thisLayer.v[i] = make([]float64, thisLayer.inputSize)
+			}
+		}
+		if thisLayer.mBias == nil || thisLayer.vBias == nil {
+			thisLayer.mBias = make([]float64, thisLayer.neuronSize)
+			thisLayer.vBias = make([]float64, thisLayer.neuronSize)
+		}
+	}
 
 	for i := range thisLayer.neuronSize {
 		for j := range thisLayer.inputSize {
-			lossWeight := lossOutGradient[i] * derivativeActivation[i] * inputWeightGradient[i][j]
-			temp := thisLayer.weight[i][j] - (learningRate * lossWeight)
-			thisLayer.weight[i][j] = temp
+			thisLayer.weight[i][j] -= thisLayer.opt.UpdateWeight(loss_derivative[i]*activation_derivative[i]*thisLayer.input[j], &thisLayer.m, &thisLayer.v, i, j)
 		}
+		thisLayer.bias[i] -= thisLayer.opt.UpdateBias(loss_derivative[i]*activation_derivative[i]*1, &thisLayer.mBias, &thisLayer.vBias, i)
 	}
 
-	for i := range thisLayer.neuronSize {
-		lossBias := lossOutGradient[i] * derivativeActivation[i] * 1
-		temp := thisLayer.bias[i] - (learningRate * lossBias)
-		thisLayer.bias[i] = temp
+	if thisLayer.opt.Info() == "adam" {
+		thisLayer.opt.Step()
 	}
 
-	sumLossOutGradient := 0.0
-	sumDerivativeActivation := 0.0
-	var sumInput []float64 = []float64{}
-	var sumOldWeight []float64 = []float64{}
-
-	for i := range thisLayer.neuronSize {
-		temp := lossOutGradient[i]
-		sumLossOutGradient += temp
-	}
-
-	for i := range thisLayer.neuronSize {
-		temp := derivativeActivation[i]
-		sumDerivativeActivation += temp
-	}
-
-	for i := range thisLayer.inputSize {
-		var sumInputPartial float64 = 0.0
-		for j := range thisLayer.neuronSize {
-			temp := inputWeightGradient[j][i]
-			sumInputPartial += temp
-		}
-		sumInput = append(sumInput, sumInputPartial)
-	}
-
-	for i := range thisLayer.inputSize {
-		var sumOldWeightPartial float64 = 0.0
-		for j := range thisLayer.neuronSize {
-			temp := oldWeight[j][i]
-			sumOldWeightPartial += temp
-		}
-		sumOldWeight = append(sumOldWeight, sumOldWeightPartial)
-	}
-
-	var lossOutForward []float64 = []float64{}
-
-	for i := range thisLayer.inputSize {
-		temp := sumLossOutGradient * sumDerivativeActivation * sumInput[i] * sumOldWeight[i]
-		lossOutForward = append(lossOutForward, temp)
-	}
-
-	return lossOutForward
+	return prevGradient
 }
 
 func (thisLayer *DenseLayer) GetLayerInformation() *model_struct.LayerInformation {

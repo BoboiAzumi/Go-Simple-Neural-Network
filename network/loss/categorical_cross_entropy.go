@@ -10,9 +10,8 @@ func CategoricalCrossEntropyLoss(yPred, yTrue []float64) float64 {
 	loss := 0.0
 	for i := range yTrue {
 		if yTrue[i] == 1 {
-			// Tambahkan stabilitas numerik untuk menghindari log(0)
 			epsilon := 1e-15
-			pred := math.Max(yPred[i], epsilon) // Stabilitas numerik
+			pred := math.Max(yPred[i], epsilon)
 			loss -= math.Log(pred)
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func ImportModel(layers *[]layer.DenseLayer, path string) {
+func ImportModel(layers *[]layer.Layer, path string) {
 	file, err := os.Open(path)
 
 	if err != nil {

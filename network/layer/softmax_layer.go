@@ -1,38 +1,12 @@
 package layer
 
 import (
-	"math"
+	"nn/network/activation"
+	"nn/network/loss"
 	"nn/network/models/model_struct"
+	"nn/network/optimizer"
 	weightinitialization "nn/network/weight_initialization"
 )
-
-func softmax(values []float64) []float64 {
-	maxValue := max(values)
-	exp := make([]float64, len(values))
-	sumExp := 0.0
-
-	for i, v := range values {
-		exp[i] = math.Exp(v - maxValue)
-		sumExp += exp[i]
-	}
-
-	softmax := make([]float64, len(values))
-	for i := range exp {
-		softmax[i] = exp[i] / sumExp
-	}
-
-	return softmax
-}
-
-func max(values []float64) float64 {
-	maxVal := values[0]
-	for _, v := range values {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	return maxVal
-}
 
 type SoftmaxLayer struct {
 	bias           []float64
@@ -42,9 +16,14 @@ type SoftmaxLayer struct {
 	input          []float64
 	output         []float64
 	initialization weightinitialization.Initialization
+	opt            optimizer.Optimizer
+	m              [][]float64
+	v              [][]float64
+	mBias          []float64
+	vBias          []float64
 }
 
-func (thisLayer *SoftmaxLayer) Init(inputSize int, neuronSize int, initialization weightinitialization.Initialization) {
+func (thisLayer *SoftmaxLayer) Init(inputSize int, neuronSize int, activation activation.ActivationFunc, derivativeLoss loss.DerivativeLossFunc, derivativeActivation activation.DerivativeActivationFunc, initialization weightinitialization.Initialization) {
 	thisLayer.bias = make([]float64, neuronSize)
 	thisLayer.neuronSize = neuronSize
 	thisLayer.inputSize = inputSize
@@ -64,21 +43,33 @@ func (thisLayer *SoftmaxLayer) Forward(x []float64) []float64 {
 		logits = append(logits, sum)
 	}
 
-	thisLayer.output = softmax(logits)
+	thisLayer.output = activation.Softmax(logits)
 	return thisLayer.output
 }
 
-func (thisLayer *SoftmaxLayer) Backward(y []float64, learningRate float64, isHidden bool) []float64 {
+func (thisLayer *SoftmaxLayer) SetOptimizer(opt optimizer.Optimizer) {
+	thisLayer.opt = opt
+}
+
+func (thisLayer *SoftmaxLayer) Backward(y []float64, isHidden bool) []float64 {
 	gradient := make([]float64, thisLayer.neuronSize)
 	for i := 0; i < thisLayer.neuronSize; i++ {
 		gradient[i] = thisLayer.output[i] - y[i]
 	}
 
-	for i := 0; i < thisLayer.neuronSize; i++ {
-		for j := 0; j < thisLayer.inputSize; j++ {
-			thisLayer.weight[i][j] -= learningRate * gradient[i] * thisLayer.input[j]
+	if thisLayer.opt.Info() == "adam" {
+		if thisLayer.m == nil || thisLayer.v == nil {
+			thisLayer.m = make([][]float64, thisLayer.neuronSize)
+			thisLayer.v = make([][]float64, thisLayer.neuronSize)
+			for i := range thisLayer.m {
+				thisLayer.m[i] = make([]float64, thisLayer.inputSize)
+				thisLayer.v[i] = make([]float64, thisLayer.inputSize)
+			}
 		}
-		thisLayer.bias[i] -= learningRate * gradient[i]
+		if thisLayer.mBias == nil || thisLayer.vBias == nil {
+			thisLayer.mBias = make([]float64, thisLayer.neuronSize)
+			thisLayer.vBias = make([]float64, thisLayer.neuronSize)
+		}
 	}
 
 	prevLayerGradient := make([]float64, thisLayer.inputSize)
@@ -86,6 +77,17 @@ func (thisLayer *SoftmaxLayer) Backward(y []float64, learningRate float64, isHid
 		for i := 0; i < thisLayer.neuronSize; i++ {
 			prevLayerGradient[j] += gradient[i] * thisLayer.weight[i][j]
 		}
+	}
+
+	for i := 0; i < thisLayer.neuronSize; i++ {
+		for j := 0; j < thisLayer.inputSize; j++ {
+			thisLayer.weight[i][j] -= thisLayer.opt.UpdateWeight(gradient[i]*thisLayer.input[j], &thisLayer.m, &thisLayer.v, i, j)
+		}
+		thisLayer.bias[i] -= thisLayer.opt.UpdateBias(gradient[i], &thisLayer.mBias, &thisLayer.vBias, i)
+	}
+
+	if thisLayer.opt.Info() == "adam" {
+		thisLayer.opt.Step()
 	}
 
 	return prevLayerGradient
