@@ -19,9 +19,7 @@ func (optim *ADAM) UpdateWeight(gradient float64, m *[][]float64, v *[][]float64
 	mCorrected := (*m)[i][j] / (1 - math.Pow(optim.beta1, float64(optim.t)))
 	vCorrected := (*v)[i][j] / (1 - math.Pow(optim.beta2, float64(optim.t)))
 
-	a := (math.Sqrt(vCorrected) + optim.epsilon)
-
-	return optim.lr * mCorrected / a
+	return optim.lr * mCorrected / (math.Sqrt(vCorrected) + optim.epsilon)
 }
 
 func (optim *ADAM) UpdateBias(gradient float64, m *[]float64, v *[]float64, i int) float64 {
