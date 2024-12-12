@@ -72,7 +72,7 @@ func (thisLayer *DenseLayer) Backward(y []float64, isHidden bool) []float64 {
 		loss_derivative = y
 	} else {
 		for i := range thisLayer.neuronSize {
-			loss_derivative[i] = thisLayer.derivativeLossFunction(thisLayer.output[i], y[i])
+			loss_derivative[i] = thisLayer.derivativeLossFunction(thisLayer.output[i], y[i], thisLayer.neuronSize)
 		}
 	}
 

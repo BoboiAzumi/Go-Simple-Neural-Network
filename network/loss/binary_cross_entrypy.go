@@ -35,7 +35,7 @@ func BinaryCrossEntropy(myout []float64, ayout []float64) float64 {
 	return bce
 }
 
-func BinaryCrossEntropyDerivative(myout float64, ayout float64) float64 {
+func BinaryCrossEntropyDerivative(myout float64, ayout float64, sample int) float64 {
 	epsilon := 1e-15
 	if myout < epsilon {
 		myout = epsilon
