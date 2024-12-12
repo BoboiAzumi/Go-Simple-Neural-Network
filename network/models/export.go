@@ -2,9 +2,10 @@ package models
 
 import (
 	"encoding/json"
-	"nn/network/layer"
-	"nn/network/models/model_struct"
 	"os"
+
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/layer"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/models/model_struct"
 )
 
 func Export(layers []layer.Layer, path string) {

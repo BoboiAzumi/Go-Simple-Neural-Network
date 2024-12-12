@@ -1,7 +1,7 @@
 package sequential
 
 import (
-	"nn/network/loss"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/loss"
 )
 
 func ChooseDerivativeLoss(losstype string) loss.DerivativeLossFunc {

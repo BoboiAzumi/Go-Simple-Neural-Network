@@ -1,6 +1,6 @@
 package sequential
 
-import "nn/network/optimizer"
+import "github.com/BoboiAzumi/Go-Simple-Neural-Network/network/optimizer"
 
 func ChooseOptimizer(opt string, param []float64) optimizer.Optimizer {
 	switch opt {

@@ -1,7 +1,7 @@
 package sequential
 
 import (
-	"nn/network/activation"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/activation"
 )
 
 func ChooseActivation(activationFunc string) activation.ActivationFunc {

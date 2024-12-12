@@ -1,6 +1,6 @@
 package sequential
 
-import weightinitialization "nn/network/weight_initialization"
+import weightinitialization "github.com/BoboiAzumi/Go-Simple-Neural-Network/network/weight_initialization"
 
 func ChooseInitialization(activation string) weightinitialization.Initialization {
 	switch activation {

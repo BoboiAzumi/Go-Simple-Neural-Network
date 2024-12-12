@@ -1,7 +1,7 @@
 package sequential
 
 import (
-	"nn/network/layer"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/layer"
 )
 
 func ChooseLayer(activation string) layer.Layer {

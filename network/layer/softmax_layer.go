@@ -1,11 +1,12 @@
 package layer
 
 import (
-	"nn/network/activation"
-	"nn/network/loss"
-	"nn/network/models/model_struct"
-	"nn/network/optimizer"
-	weightinitialization "nn/network/weight_initialization"
+	weightinitialization "github.com/BoboiAzumi/Go-Simple-Neural-Network/network/weight_initialization"
+
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/activation"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/loss"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/models/model_struct"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/optimizer"
 )
 
 type SoftmaxLayer struct {

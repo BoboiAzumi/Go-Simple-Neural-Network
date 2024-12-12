@@ -2,9 +2,10 @@ package trainer
 
 import (
 	"fmt"
-	"nn/datasets"
-	"nn/network/loss"
-	"nn/network/sequential"
+
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/datasets"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/loss"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/sequential"
 )
 
 func GolfSoftmaxTrainer() {
@@ -19,14 +20,9 @@ func GolfSoftmaxTrainer() {
 	Model.AddLayer("relu", 9)
 	Model.AddLayer("softmax", 2)
 
-	stopLoss := 0.000001
-	backprop := true
 	// Training
 	for epoch := range 4000 {
 		for batch := range len(x) {
-			if !backprop {
-				continue
-			}
 			Model.Predict(x[batch])
 			Model.Backward(y[batch])
 		}
@@ -39,9 +35,6 @@ func GolfSoftmaxTrainer() {
 		}
 
 		loss_val = loss_val / float64(len(x))
-		if loss_val < stopLoss {
-			backprop = false
-		}
 
 		if epoch%100 == 0 {
 			fmt.Printf("Loss : %f \n", loss_val)

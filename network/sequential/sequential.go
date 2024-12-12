@@ -1,8 +1,8 @@
 package sequential
 
 import (
-	"nn/network/layer"
-	"nn/network/models"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/layer"
+	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/models"
 )
 
 type SequentialModel struct {
