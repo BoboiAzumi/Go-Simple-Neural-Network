@@ -8,12 +8,15 @@ import (
 )
 
 func main() {
-	Model := sequential.NewSequentialModel()
-	Model.Init(9, "mse", "adam", []float64{1e-3, 0.9, 0.999, 1e-8})
+	//trainer.TrainTicTacToe()
+	//return
 
-	Model.AddLayer("relu", 128)
-	Model.AddLayer("relu", 64)
-	Model.AddLayer("sigmoid", 9)
+	Model := sequential.NewSequentialModel()
+	Model.Init(9, "categoricalcrossentropy", "adam", []float64{1e-3, 0.9, 0.999, 1e-8})
+	Model.AddLayer("tanh", 128)
+	Model.AddLayer("tanh", 64)
+	Model.AddLayer("tanh", 32)
+	Model.AddLayer("softmax", 9)
 
 	for true {
 		game := tictactoe.NewTicTacToe()

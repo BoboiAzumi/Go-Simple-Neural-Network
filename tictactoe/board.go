@@ -11,6 +11,7 @@ import (
 type TicTacToe struct {
 	board  [][]int
 	player int
+	winner int
 }
 
 func (game *TicTacToe) Init() {
@@ -19,6 +20,7 @@ func (game *TicTacToe) Init() {
 		game.board[i] = make([]int, 3)
 	}
 	game.player = 1
+	game.winner = 0
 }
 
 func (game *TicTacToe) GameBoard() [][]int {
@@ -115,6 +117,7 @@ func (game *TicTacToe) IsGameOver() bool {
 
 	for i := range len(game.board) {
 		if game.board[i][0] == game.board[i][1] && game.board[i][1] == game.board[i][2] && game.board[i][0] != 0 {
+			game.winner = game.board[i][0]
 			gameover = true
 		}
 	}
@@ -122,15 +125,18 @@ func (game *TicTacToe) IsGameOver() bool {
 	for i := range len(game.board) {
 		for j := range len(game.board[i]) {
 			if game.board[0][j] == game.board[1][j] && game.board[1][j] == game.board[2][j] && game.board[i][j] != 0 {
+				game.winner = game.board[0][j]
 				gameover = true
 			}
 		}
 	}
 
 	if game.board[1][1] == game.board[0][0] && game.board[2][2] == game.board[0][0] && game.board[0][0] != 0 {
+		game.winner = game.board[1][1]
 		gameover = true
 	}
 	if game.board[1][1] == game.board[0][2] && game.board[2][0] == game.board[0][2] && game.board[0][2] != 0 {
+		game.winner = game.board[1][1]
 		gameover = true
 	}
 
@@ -150,13 +156,27 @@ func (game *TicTacToe) IsGameOver() bool {
 }
 
 func (game *TicTacToe) PrintBoard() {
-	for i := range len(game.board) {
-		fmt.Printf("%d \n", game.board[i])
+	formattedBoard := make([][]string, 3)
+	for i := range len(formattedBoard) {
+		formattedBoard[i] = make([]string, 3)
+		for j := range len(formattedBoard[i]) {
+			if game.board[i][j] == 0 {
+				formattedBoard[i][j] = "_"
+			} else if game.board[i][j] == 1 {
+				formattedBoard[i][j] = "X"
+			} else {
+				formattedBoard[i][j] = "O"
+			}
+		}
+	}
+
+	for i := range len(formattedBoard) {
+		fmt.Printf("%s \n", formattedBoard[i])
 	}
 }
 
 func (game *TicTacToe) ChangePlayer() {
-	game.player = 3 - game.player
+	game.player = -game.player
 }
 
 func (game *TicTacToe) ValidMove() []int {
@@ -169,6 +189,14 @@ func (game *TicTacToe) ValidMove() []int {
 	}
 
 	return index
+}
+
+func (game *TicTacToe) Winner() int {
+	return game.winner
+}
+
+func (game *TicTacToe) CurrentPlayer() int {
+	return game.player
 }
 
 func (game TicTacToe) PrintBoardMap() {

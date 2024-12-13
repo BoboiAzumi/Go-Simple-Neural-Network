@@ -2,6 +2,7 @@ package trainer
 
 import (
 	"fmt"
+	"math/rand/v2"
 
 	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/loss"
 	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/sequential"
@@ -18,7 +19,7 @@ func AIPlaying(model *sequential.SequentialModel, states *[][]float64, targets *
 		target := make([]float64, 9)
 
 		for i := range len(valid) {
-			target[valid[i]] = 1.0 / float64(len(valid))
+			target[valid[i]] = 1.0 / float64(rand.IntN(len(valid))+1)
 		}
 
 		*states = append(*states, boardInput)
@@ -32,11 +33,11 @@ func AIPlaying(model *sequential.SequentialModel, states *[][]float64, targets *
 
 func TrainTicTacToe() {
 	Model := sequential.NewSequentialModel()
-	Model.Init(9, "mse", "adam", []float64{1e-3, 0.9, 0.999, 1e-8})
-
-	Model.AddLayer("relu", 128)
-	Model.AddLayer("relu", 64)
-	Model.AddLayer("sigmoid", 9)
+	Model.Init(9, "categoricalcrossentropy", "adam", []float64{1e-3, 0.9, 0.999, 1e-8})
+	Model.AddLayer("tanh", 128)
+	Model.AddLayer("tanh", 64)
+	Model.AddLayer("tanh", 32)
+	Model.AddLayer("softmax", 9)
 
 	for epoch := range 1000 {
 		var states [][]float64 = [][]float64{}

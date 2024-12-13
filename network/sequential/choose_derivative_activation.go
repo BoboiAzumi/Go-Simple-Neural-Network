@@ -12,6 +12,8 @@ func ChooseDerivativeActivation(activationFunc string) activation.DerivativeActi
 		return activation.DerivativeRelu
 	case "linear":
 		return activation.DerivativeLinear
+	case "tanh":
+		return activation.DerivativeTanh
 	default:
 		return activation.DerivativeRelu
 	}
