@@ -24,13 +24,13 @@ func main() {
 			loop := true
 			var input string
 			for loop {
-				fmt.Print("Pilih : ")
+				fmt.Print("You Playing : ")
 				fmt.Scan(&input)
 				loop = game.Move(input)
 			}
 			game.PrintBoard()
 			game.ChangePlayer()
-			fmt.Println("\nAI Playing => ")
+			fmt.Println("\nAI Playing")
 			index := tictactoe.AIPlaying(Model, game)
 			game.Move(mapping[index])
 			game.PrintBoard()
