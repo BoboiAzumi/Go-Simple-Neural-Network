@@ -1,6 +1,8 @@
 package layer
 
 import (
+	"sync"
+
 	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/activation"
 	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/loss"
 	"github.com/BoboiAzumi/Go-Simple-Neural-Network/network/models/model_struct"
@@ -55,6 +57,7 @@ func (thisLayer *DenseLayer) Forward(x []float64) []float64 {
 		sum = thisLayer.activationFunction(sum)
 		matrix = append(matrix, sum)
 	}
+
 	thisLayer.output = matrix
 
 	return thisLayer.output
@@ -67,44 +70,65 @@ func (thisLayer *DenseLayer) SetOptimizer(opt optimizer.Optimizer) {
 func (thisLayer *DenseLayer) Backward(y []float64, isHidden bool) []float64 {
 	var loss_derivative []float64 = make([]float64, thisLayer.neuronSize)
 	var activation_derivative []float64 = make([]float64, thisLayer.neuronSize)
-
+	var wg sync.WaitGroup
 	if isHidden {
 		loss_derivative = y
 	} else {
 		for i := range thisLayer.neuronSize {
-			loss_derivative[i] = thisLayer.derivativeLossFunction(thisLayer.output[i], y[i], thisLayer.neuronSize)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				loss_derivative[i] = thisLayer.derivativeLossFunction(thisLayer.output[i], y[i], thisLayer.neuronSize)
+			}()
 		}
+		wg.Wait()
 	}
 
 	for i := range thisLayer.neuronSize {
-		activation_derivative[i] = thisLayer.derivativeActivationFunction(thisLayer.output[i])
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			activation_derivative[i] = thisLayer.derivativeActivationFunction(thisLayer.output[i])
+		}()
 	}
+	wg.Wait()
 
 	prevGradient := make([]float64, thisLayer.inputSize)
 
 	for i := range thisLayer.inputSize {
-		sumLossDerivative := 0.0
-		sumActivationDerivative := 0.0
-		sumInput := 0.0
-		sumWeight := 0.0
-		for j := range thisLayer.neuronSize {
-			sumLossDerivative += loss_derivative[j]
-			sumActivationDerivative += activation_derivative[j]
-			sumInput += thisLayer.input[i]
-			sumWeight += thisLayer.weight[j][i]
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sumLossDerivative := 0.0
+			sumActivationDerivative := 0.0
+			sumInput := 0.0
+			sumWeight := 0.0
+			for j := range thisLayer.neuronSize {
+				sumLossDerivative += loss_derivative[j]
+				sumActivationDerivative += activation_derivative[j]
+				sumInput += thisLayer.input[i]
+				sumWeight += thisLayer.weight[j][i]
+			}
 
-		prevGradient[i] = sumLossDerivative * sumActivationDerivative * sumInput * sumWeight
+			prevGradient[i] = sumLossDerivative * sumActivationDerivative * sumInput * sumWeight
+		}()
 	}
+
+	wg.Wait()
 
 	if thisLayer.opt.Info() == "adam" {
 		if thisLayer.m == nil || thisLayer.v == nil {
 			thisLayer.m = make([][]float64, thisLayer.neuronSize)
 			thisLayer.v = make([][]float64, thisLayer.neuronSize)
 			for i := range thisLayer.m {
-				thisLayer.m[i] = make([]float64, thisLayer.inputSize)
-				thisLayer.v[i] = make([]float64, thisLayer.inputSize)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					thisLayer.m[i] = make([]float64, thisLayer.inputSize)
+					thisLayer.v[i] = make([]float64, thisLayer.inputSize)
+				}()
 			}
+			wg.Wait()
 		}
 		if thisLayer.mBias == nil || thisLayer.vBias == nil {
 			thisLayer.mBias = make([]float64, thisLayer.neuronSize)
@@ -113,11 +137,16 @@ func (thisLayer *DenseLayer) Backward(y []float64, isHidden bool) []float64 {
 	}
 
 	for i := range thisLayer.neuronSize {
-		for j := range thisLayer.inputSize {
-			thisLayer.weight[i][j] -= thisLayer.opt.UpdateWeight(loss_derivative[i]*activation_derivative[i]*thisLayer.input[j], &thisLayer.m, &thisLayer.v, i, j)
-		}
-		thisLayer.bias[i] -= thisLayer.opt.UpdateBias(loss_derivative[i]*activation_derivative[i]*1, &thisLayer.mBias, &thisLayer.vBias, i)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range thisLayer.inputSize {
+				thisLayer.weight[i][j] -= thisLayer.opt.UpdateWeight(loss_derivative[i]*activation_derivative[i]*thisLayer.input[j], &thisLayer.m, &thisLayer.v, i, j)
+			}
+			thisLayer.bias[i] -= thisLayer.opt.UpdateBias(loss_derivative[i]*activation_derivative[i]*1, &thisLayer.mBias, &thisLayer.vBias, i)
+		}()
 	}
+	wg.Wait()
 
 	if thisLayer.opt.Info() == "adam" {
 		thisLayer.opt.Step()
